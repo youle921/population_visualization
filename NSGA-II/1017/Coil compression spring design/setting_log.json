@@ -1,0 +1,13 @@
+{
+"npop": 100,
+"noff": 100,
+"n_trial": 31,
+"n_eval": 100000,
+"save_list": [
+"objectives",
+"variables"
+],
+"start_time": "2021-10-17T03:36:24.562372",
+"end_time": "2021-10-17T03:37:27.040167",
+"computational time[s]": 62.477795
+}

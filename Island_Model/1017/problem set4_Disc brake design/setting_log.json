@@ -1,0 +1,15 @@
+{
+"npop": 100,
+"noff": 100,
+"interval": 10,
+"migration_size": 10,
+"n_trial": 31,
+"n_gen": 1000,
+"save_list": [
+"objectives",
+"variables"
+],
+"start_time": "2021-10-17T03:36:36.427569",
+"end_time": "2021-10-17T03:39:02.382237",
+"computational time[s]": 145.954668
+}
