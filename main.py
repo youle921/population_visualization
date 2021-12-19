@@ -11,12 +11,13 @@ original_names = ["Four bar truss design", "Reinforced concrete beam design", "P
 
 def show_problem_info():
     info_array = []
-    d = [4,3,4,2,3]
-    for i, (name, d_) in enumerate(zip(original_names, d)):
-        info_array.append([int(i/2) + 1, name, 2, d_])
+    m = [2] * 5 + [3] * 7
+    d = [4,3,4,2,3,3,4,4,5,7,4,4]
+    for i, (name, m_, d_) in enumerate(zip(original_names, m, d)):
+        info_array.append([int(i/2) + 1, name, m_, d_])
     df = pd.DataFrame(info_array, columns = ["Problem Set No.", "Problem Name", "Number of Objectives", "Number of Dimensions"], index = np.arange(len(info_array))+1)
     
-    with st.expander("See Information"):
+    with st.expander("See Information of RE Problems"):
         st.dataframe(df)
 
 @st.cache
@@ -74,14 +75,10 @@ elif nobj == 3:
     problem = st.sidebar.selectbox("問題名", original_names[5:])
     st.sidebar.write("表示角度")
     z_angle = st.sidebar.slider("仰角", 0, 90, 30, 5)
-    xy_angle = st.sidebar.slider("方位角( → 時計回り)", 0, 360, 300, 10)
+    xy_angle = st.sidebar.slider("方位角( → 時計回り)", -360, 360, -60, 10)
 
 alg = st.sidebar.radio("アルゴリズム名", alg_names)
 gen = st.sidebar.slider("世代数", 1, 50)
-
-# z_angle = 30
-# xy_angle = -60
-
 
 # @st.cache
 def first_draw(nobj, pf, metrics):
@@ -109,6 +106,7 @@ def first_draw(nobj, pf, metrics):
         figs["scat"] = figs["ax"].scatter([], [], label = "Population")
 
         figs["ax"].legend(loc = "upper right", bbox_to_anchor = [1.9, 1])
+        figs["ax"].set(xlabel = r"$f_1$", ylabel = r"$f_2$")
 
     elif nobj == 3:
 
@@ -128,10 +126,11 @@ def first_draw(nobj, pf, metrics):
         figs["ax"].set_title('population plot')
 
         figs["ax"].legend(loc = "upper right", bbox_to_anchor = [2.0, 1])
+        figs["ax"].set(xlabel = r"$f_1$", ylabel = r"$f_2$", zlabel = r"$f_3$")
 
     # IGD plot
     figs["IGD_lines"] = figs["sub_ax"].plot(range(1, 51), np.array([m[p_name] for m in metrics.values()]).T, label = alg_names)
-    figs["current_gen"] = plt.axvline(0, c = "k", label = "current gen", zorder = 3)
+    figs["current_gen"] = plt.axvline(0, c = "k", label = "current gen", zorder = 4)
 
     figs["sub_ax"].legend()
     figs["sub_ax"].grid()
@@ -163,7 +162,7 @@ class image_viewer:
 
             if key == alg_name:
                 l.set_data(range(1, 51), metrics[key][p_name])
-                l.zorder = 10
+                l.zorder = 5
             else:
                 l.set_data(range(1, 51), metrics[key][p_name])
                 l.zorder = 3
@@ -197,6 +196,9 @@ fig_dict = first_draw(nobj, pf, metrics)
 viewer.view_image(nobj, fig_dict, pf, objs, metrics, gen, problem, alg)
 
 st.write(fig_dict["fig"])
+
+if nobj == 3:
+    st.warning("matplotlibの仕様上，3目的の問題では個体とPFが重なって，うまく表示されない場合があります．")
 
 # viewer.first_draw(problem.value, alg1.value)
 # widgets.interact(viewer.view_image, gen = (1, 50, 1), p_name = problem, alg_name = alg1)
