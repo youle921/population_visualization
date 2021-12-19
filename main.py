@@ -44,7 +44,7 @@ def data_loader():
                 objs[alg_name][key] = np.load(f'{n}/{d.name}/objectives.npz')["arr_0"]
                 metrics[alg_name][key] = np.loadtxt(f'{n}/{d.name}/normalized_IGD.csv', delimiter = ",")
 
-    for name, original_name in zip(problem_names, metrics["NSGA-II"].keys()):
+    for name, original_name in zip(problem_names, original_names):
 
         max_IGD = np.array([[np.max(alg_value[original_name])] for alg_value in metrics.values()]).max(axis = 0)
 
