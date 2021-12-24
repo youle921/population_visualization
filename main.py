@@ -80,64 +80,6 @@ elif nobj == 3:
 alg = st.sidebar.radio("アルゴリズム名", alg_names)
 gen = st.sidebar.slider("世代数", 1, 50)
 
-# @st.cache
-def first_draw(nobj, pf, metrics):
-
-    if nobj == 2:
-
-        # setting
-        p_name = "Coil compression spring design"
-        alg_name = "MO-MFEA"
-
-        figs = dict(zip(["fig", "axes"], plt.subplots(2, 1)))
-
-        ax, sub_ax = figs["axes"]
-
-        figs["ax"] = ax
-
-        figs["sub_ax"] = sub_ax
-        figs["sub_ax"].set_title("IGD (scaled [0-1])")
-
-        # population plot
-        figs["line"], = figs["ax"].plot(pf[p_name][0], pf[p_name][1], c = "k", label = "Pareto Front")
-        figs["ax"].set_aspect('equal')
-
-        figs["ax"].set_title('population plot')
-        figs["scat"] = figs["ax"].scatter([], [], label = "Population")
-
-        figs["ax"].legend(loc = "upper right", bbox_to_anchor = [1.9, 1])
-        figs["ax"].set(xlabel = r"$f_1$", ylabel = r"$f_2$")
-
-    elif nobj == 3:
-
-        # setting
-        p_name = "Welded beam design"
-        alg_name = "MO-MFEA"
-        
-        figs = dict(fig = plt.figure())
-        figs["ax"] = figs["fig"].add_subplot(211, projection = '3d')
-        figs["line"] = figs["ax"].scatter(*pf[p_name], color = "k", alpha = 1, label = "Pareto Front")
-
-        figs["sub_ax"] = figs["fig"].add_subplot(212)
-        figs["sub_ax"].set_title("\nIGD (scaled [0-1])")
-
-        # population plot
-        figs["scat"] = figs["ax"].scatter([], [], [], label = "Population")
-        figs["ax"].set_title('population plot')
-
-        figs["ax"].legend(loc = "upper right", bbox_to_anchor = [2.0, 1])
-        figs["ax"].set(xlabel = r"$f_1$", ylabel = r"$f_2$", zlabel = r"$f_3$")
-
-    # IGD plot
-    figs["IGD_lines"] = figs["sub_ax"].plot(range(1, 51), np.array([m[p_name] for m in metrics.values()]).T, label = alg_names)
-    figs["current_gen"] = plt.axvline(0, c = "k", label = "current gen", zorder = 4)
-
-    figs["sub_ax"].legend()
-    figs["sub_ax"].grid()
-    plt.tight_layout()
-
-    return figs
-
 class image_viewer:
 
     def __init__(self):
@@ -151,141 +93,84 @@ class image_viewer:
             n = alg_name.split("/")[0]
             self.color_palette[n] = c
 
-    def view_image(self, nobj, figs, pf, objs, metrics, gen, p_name = "Coil compression spring design", alg_name = "MO-MFEA"):
+    def view_image(self, nobj, pf, objs, metrics, gen, p_name = "Coil compression spring design", alg_name = "MO-MFEA"):
 
         if nobj == 2:
-            self.view_2d_image(figs, pf, objs, metrics, gen, p_name, alg_name)
+            fig, sub_ax = self.view_2d_image(pf, objs, metrics, gen, p_name, alg_name)
         elif nobj == 3:
-            self.view_3d_image(figs, pf, objs, metrics, gen, p_name, alg_name)
+            fig, sub_ax = self.view_3d_image(pf, objs, metrics, gen, p_name, alg_name)
 
-        for l, key in zip(figs["IGD_lines"], objs.keys()):
+        IGD_lines = sub_ax.plot(range(1, 51), np.array([m[p_name] for m in metrics.values()]).T, label = alg_names)
+        current_gen = plt.axvline(gen, c = "k", label = "current gen", zorder = 4)
+
+        for l, key in zip(IGD_lines, objs.keys()):
 
             if key == alg_name:
-                l.set_data(range(1, 51), metrics[key][p_name])
                 l.zorder = 5
             else:
-                l.set_data(range(1, 51), metrics[key][p_name])
                 l.zorder = 3
                 l.set_linestyle("dashed")
                 l.set_linewidth(1)
 
-        figs["current_gen"].set_xdata(gen)
+        sub_ax.legend()
+        sub_ax.grid()
+        plt.tight_layout()
 
-    def view_2d_image(self, figs, pf, objs, metrics, gen, p_name = "Coil compression spring design", alg_name = "MO-MFEA"):
+        return fig
 
-        figs["line"].set_data(pf[p_name][0], pf[p_name][1])
-        figs["scat"].set_offsets(objs[alg_name][p_name][gen - 1])
+    def view_2d_image(self, pf, objs, metrics, gen, p_name = "Coil compression spring design", alg_name = "MO-MFEA"):
 
-    def view_3d_image(self, figs, pf, objs, metrics, gen, p_name = "Welded beam design", alg_name = "MO-MFEA"):
+        fig, axes = plt.subplots(2, 1, sharex = False, sharey = False)
+        ax, sub_ax = axes
 
-        figs["line"].remove()
-        figs["scat"].remove()
+        sub_ax.set_title("IGD (scaled [0-1])")
+
+        # population plot
+        ax.plot(pf[p_name][0], pf[p_name][1], c = "k", label = "Pareto Front")
+        ax.set_aspect('equal')
+
+        ax.set_title('population plot')
+        ax.scatter(*objs[alg_name][p_name][gen - 1].T, label = "Population")
+
+        ax.legend(loc = "upper right", bbox_to_anchor = [1.9, 1])
+        ax.set(xlabel = r"$f_1$", ylabel = r"$f_2$")
+
+        ax.set(xlim = [-0.05, 1.05], ylim = [-0.05, 1.05])
+
+        return fig, sub_ax
+
+    def view_3d_image(self, pf, objs, metrics, gen, p_name = "Welded beam design", alg_name = "MO-MFEA"):
+
+        fig = plt.figure()
+        ax = fig.add_subplot(211, projection = '3d')
+
+        sub_ax = fig.add_subplot(212)
+        sub_ax.set_title("\nIGD (scaled [0-1])")
+
+        # population plot
 
         mask = ((objs[alg_name][p_name][gen - 1] < -0.05) | (objs[alg_name][p_name][gen - 1] > 1.05)).max(axis = 1)
+        ax.scatter(*objs[alg_name][p_name][gen - 1][~mask].T, color = "tab:blue", alpha = 1, label = "Population")
 
-        figs["scat"] = figs["ax"].scatter(*objs[alg_name][p_name][gen - 1][~mask].T, color = "tab:blue", alpha = 1)
-        figs["line"] = figs["ax"].scatter(*pf[p_name], color = "k", alpha = 1, s = 1, marker = "s")
+        # pf plot
+        ax.scatter(*pf[p_name], s = 1, color = "k", alpha = 1, label = "Pareto Front")
 
-        figs["ax"].set(xlim = [-0.05, 1.05], ylim = [-0.05, 1.05], zlim = [-0.05, 1.05])
-        figs["ax"].view_init(elev = z_angle, azim = xy_angle)
+        ax.set_title('population plot')
+
+        ax.legend(loc = "upper right", bbox_to_anchor = [2.0, 1])
+        ax.set(xlabel = r"$f_1$", ylabel = r"$f_2$", zlabel = r"$f_3$")
+
+        ax.set(xlim = [-0.05, 1.05], ylim = [-0.05, 1.05], zlim = [-0.05, 1.05])
+        ax.view_init(elev = z_angle, azim = xy_angle)
+
+        return fig, sub_ax
 
 
 viewer = image_viewer()
 
-fig_dict = first_draw(nobj, pf, metrics)
-viewer.view_image(nobj, fig_dict, pf, objs, metrics, gen, problem, alg)
+fig = viewer.view_image(nobj, pf, objs, metrics, gen, problem, alg)
 
-st.write(fig_dict["fig"])
+st.write(fig)
 
 if nobj == 3:
     st.warning("matplotlibの仕様上，3目的の問題では個体とPFが重なって，うまく表示されない場合があります．")
-
-# viewer.first_draw(problem.value, alg1.value)
-# widgets.interact(viewer.view_image, gen = (1, 50, 1), p_name = problem, alg_name = alg1)
-
-
-# alg_names = [n.split("/")[0] for n in["NSGA-II/1017", "MO-MFEA/1019", "MO-MFEA-II/1019", "EMEA/1017", "Island_Model/1017"]]
-# original_names = ["Two bar truss design", "Welded beam design","Disc brake design","Vehicle crashworthiness design","Speed reducer design","Gear train design","Rocket injector design","Car side impact design","Conceptual marine design"]
-
-# class image_viewer:
-
-#     def __init__(self):
-
-#         self.pf = {}
-#         self.objs = {}
-#         self.metrics = {}
-
-#         self.previous = None
-
-#         problem_names = ["RE31","RE32", "RE33", "RE34", "RE35", "RE36", "RE37"]
-
-#         alg_names = ["NSGA-II/1017", "MO-MFEA/1019", "MO-MFEA-II/1019", "EMEA/1017", "Island_Model/1017"]
-
-#         for alg_name in alg_names:
-
-#             n = alg_name.split("/")[0]
-#             self.objs[n] = {}
-#             self.metrics[n] = {}
-
-#             p = pathlib.Path(alg_name)
-#             dirs = p.glob("*design/")
-
-#             for d in dirs:
-
-#                 key = str(d.name).split("_")[-1]
-#                 self.objs[n][key] = np.load(f'{alg_name}/{d.name}/trial1_objectives.npz')["arr_0"]
-#                 self.metrics[n][key] = np.loadtxt(f'{alg_name}/{d.name}/normalized_IGD_log_trial1.csv', delimiter = ",")
-
-#         original_names = ["Two bar truss design", "Welded beam design","Disc brake design","Vehicle crashworthiness design","Speed reducer design","Gear train design","Rocket injector design","Car side impact design","Conceptual marine design"]
-
-#         for name, original_name in zip(problem_names, original_names):
-
-#             pf = np.loadtxt(f'real_world_problem/approximated_Pareto_fronts/{name}.csv', delimiter = ",")
-
-#             ideal = pf.min(axis = 0)
-#             nadir = pf.max(axis = 0)
-
-#             self.pf[original_name] = ((pf[pf[:, 0].argsort()] - ideal) / (nadir - ideal)).T
-
-#             for alg_name in alg_names:
-#                 self.objs[alg_name.split("/")[0]][original_name] = (self.objs[alg_name.split("/")[0]][original_name] - ideal) / (nadir - ideal)
-
-#     def first_draw(self, p_name = "Welded beam design", alg_name = "MO-MFEA"):
-
-#         self.fig = plt.figure()
-#         self.ax = self.fig.add_subplot(111, projection = '3d')
-#         self.line = self.ax.scatter(*self.pf[p_name], color = "k", alpha = 1, label = "Pareto Front")
-
-# #         self.ax.set_aspect('equal')
-
-#         self.txt = self.fig.suptitle(f'IGD: {self.metrics[alg_name][p_name][0]:.4e}')
-#         self.scat = self.ax.scatter([], [], [], label = "Population")
-
-#         self.fig.legend()
-
-#     def view_image(self, gen, p_name = "Welded beam design", alg_name = "MO-MFEA"):
-
-# #         if self.previous != p_name:
-# #             self.first_draw(p_name, alg_name)
-# #             self.previous = p_name
-
-# #         self.first_draw(p_name, alg_name)
-
-#         self.line.remove()
-#         self.scat.remove()
-
-#         mask = ((self.objs[alg_name][p_name][gen - 1] < -0.05) | (self.objs[alg_name][p_name][gen - 1] > 1.05)).max(axis = 1)
-
-#         self.txt.set_text(f'{alg_name.replace("_", " ")}\nIGD: {self.metrics[alg_name][p_name][gen - 1]:.4e}')
-#         self.line = self.ax.scatter(*self.pf[p_name], color = "k", alpha = 1, s = 1, marker = "s")
-#         self.scat = self.ax.scatter(*self.objs[alg_name][p_name][gen - 1][~mask].T, color = "tab:blue", alpha = 1)
-
-#         self.ax.set(xlim = [-0.05, 1.05], ylim = [-0.05, 1.05], zlim = [-0.05, 1.05])
-
-# viewer = image_viewer()
-
-# problem = widgets.Dropdown(description = "問題名", options = original_names)
-# alg1 = widgets.ToggleButtons(description = "アルゴリズム名", options = alg_names)
-
-# viewer.first_draw(problem.value, alg1.value)
-# widgets.interact(viewer.view_image, gen = (1, 50, 1), p_name = problem, alg_name = alg1);
