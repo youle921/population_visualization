@@ -120,7 +120,7 @@ class image_viewer:
 
     def view_2d_image(self, pf, objs, metrics, gen, p_name = "Coil compression spring design", alg_name = "MO-MFEA"):
 
-        fig, axes = plt.subplots(2, 1, sharex = False, sharey = False)
+        fig, axes = plt.subplots(2, 1)
         ax, sub_ax = axes
 
         sub_ax.set_title("IGD (scaled [0-1])")
